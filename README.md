@@ -1,5 +1,5 @@
 ## app rick and morty
-## Estas vistas fueron creadas por figma son las siguientes: (Splash, Home, Explore, profile)
+## Estas vistas fueron creadas por figma son las siguientes: ( Home, Explore, profile)
 <img width="432" height="928" alt="image" src="https://github.com/user-attachments/assets/058ac155-25d4-4499-ad26-270d5094f685" />
 <img width="485" height="952" alt="image" src="https://github.com/user-attachments/assets/1dd4cf94-024d-4f4e-bc7b-191bfe0a36b4" />
 <img width="436" height="971" alt="image" src="https://github.com/user-attachments/assets/bda806a4-8abc-4890-a07c-a46e57092c2c" />
