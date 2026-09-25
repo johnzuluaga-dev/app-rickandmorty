@@ -26,8 +26,25 @@ App Android nativa en Jetpack Compose que consume la API pública de [Rick and M
 | Home | `ui/screens/HomeScreen.kt` | Lista de personajes reales de la API, con buscador y filtro por status (Alive/Dead/Unknown) |
 | Profile | `ui/screens/ProfileScreen.kt` | Perfil de usuario con estadísticas y lista de configuración (switches) |
 | Explore | `ui/screens/CharacterScreen.kt` | Grilla de personajes en formato tarjeta, con buscador propio |
+| Detalle de personaje | `ui/screens/characterDetailScreen.kt` | Vista de detalle con imagen, nombre, estado y datos del personaje (origen, especie, estado) |
 
-Navegación: `Splash → Home ⇄ Profile ⇄ Explore` (bottom nav bar compartida entre las últimas tres).
+## Navegación
+
+| Archivo | Responsabilidad |
+|---|---|
+| `ui/navigation/AppNavigation.kt` | Punto de entrada: crea el `NavHostController` (con `rememberNavController`) y monta `NavGraph` |
+| `ui/navigation/NavGraph.kt` | Define todas las rutas (`Screen`) y el `NavHost` con cada `composable`; incluye la ruta con argumento del detalle (`character_detail_screen/{characterId}`) y la función `navigateToTab` para el bottom nav |
+
+Flujo: `Splash → Home ⇄ Profile ⇄ Explore`, y desde Home/Explore se navega al **Detalle de personaje** pasando el `characterId` como argumento de ruta. El bottom nav bar es compartido entre Home, Profile y Explore, y conserva el estado de cada pestaña (`saveState` / `restoreState`).
+
+## Capturas de pantalla
+
+| Home (lista con scroll) | Detalle de personaje |
+|---|---|
+| <img src="screenshots/home-list.png" width="280" alt="Lista de personajes con scroll"/> | <img src="screenshots/character-detail.png" width="280" alt="Detalle de un personaje"/> |
+
+- **Home**: lista vertical de tarjetas de personajes obtenidas de la API, cada una con imagen, nombre, especie y estado (`ALIVE` / `DEAD` / `UNKNOWN`) resaltado con color, más ícono de favorito.
+- **Detalle**: al tocar una tarjeta se abre la vista de detalle con imagen ampliada, nombre, estado/especie y una card con Origen, Especie y Estado.
 
 ## Estructura del proyecto
 
@@ -54,6 +71,6 @@ app/src/main/java/com/danidev/apprickmorty/
 
 No requiere configuración adicional: la API es pública y no necesita API key.
 
-## documentacion hecha con claude 
+## documentacion hecha con claude
 
 
