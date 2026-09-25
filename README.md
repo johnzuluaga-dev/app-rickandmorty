@@ -73,4 +73,3 @@ No requiere configuración adicional: la API es pública y no necesita API key.
 
 ## documentacion hecha con claude
 
-
