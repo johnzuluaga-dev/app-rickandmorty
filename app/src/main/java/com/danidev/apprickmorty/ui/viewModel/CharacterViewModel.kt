@@ -31,15 +31,23 @@ class CharacterViewModel @JvmOverloads constructor(
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
-        loadCharacters(query.ifBlank { null })
+        loadCharacters(query)
     }
 
-    private fun loadCharacters(query: String? = null) {
+    fun loadCharacters(query: String? = null) {
         viewModelScope.launch {
             _uiState.value = CharacterUiState.Loading
-            repository.getCharacters(query)
-                .onSuccess { _uiState.value = CharacterUiState.Success(it) }
-                .onFailure { _uiState.value = CharacterUiState.Error(it.message ?: "Error desconocido") }
+
+            // Si el texto de búsqueda está vacío, enviamos null para cargar la lista completa
+            val cleanQuery = query?.trim().takeIf { !it.isNullOrEmpty() }
+
+            repository.getCharacters(cleanQuery)
+                .onSuccess { characters ->
+                    _uiState.value = CharacterUiState.Success(characters)
+                }
+                .onFailure { throwable ->
+                    _uiState.value = CharacterUiState.Error(throwable.message ?: "Error al obtener los personajes")
+                }
         }
     }
 }

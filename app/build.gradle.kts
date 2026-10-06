@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
+
 }
 
 android {
@@ -54,6 +56,19 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // Firebase (Auth y Firestore)
+    implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+    // Coil para cargar la imagen en Compose
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+
+
+
+
 
     // Retrofit & Gson (Consumo de API REST)
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
@@ -70,4 +85,6 @@ dependencies {
 
     // Iconos de Material Design
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    //Implementacion Clodinary
+    implementation("com.cloudinary:cloudinary-android:2.5.0")
 }

@@ -1,12 +1,18 @@
 package com.danidev.apprickmorty.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,9 +22,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.danidev.apprickmorty.data.AuthService
+import com.danidev.apprickmorty.data.CloudinaryManager
 import com.danidev.apprickmorty.ui.components.BottomNavBar
 import com.danidev.apprickmorty.ui.components.NavTab
 import com.danidev.apprickmorty.ui.theme.*
@@ -47,18 +56,80 @@ private val settingsItems = listOf(
 
 @Composable
 fun ProfileScreen(
-    name: String = "RICK SANCHEZ",
-    bio: String = "Dimension C-137. I build batteries. Don't touch my stuff.",
-    avatarUrl: String = "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
+    authService: AuthService = AuthService(),
+    onLogout: () -> Unit = {},
     onTabSelected: (NavTab) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val currentUser = authService.getCurrentUser()
+
+    var name by remember { mutableStateOf(currentUser?.displayName ?: currentUser?.email?.substringBefore("@") ?: "RICK SANCHEZ") }
+    var bio by remember { mutableStateOf("Dimension C-137. I build batteries. Don't touch my stuff.") }
+    var avatarUrl by remember { mutableStateOf("https://rickandmortyapi.com/api/character/avatar/1.jpeg") }
+    var isUploading by remember { mutableStateOf(false) }
+
+    // Cargar datos guardados previamente desde Firestore
+    LaunchedEffect(Unit) {
+        authService.obtenerPerfil(
+            onSuccess = { datos ->
+                datos?.let {
+                    if (it["nombre"] != null) name = it["nombre"].toString()
+                    if (it["photoUrl"] != null && it["photoUrl"].toString().isNotEmpty()) {
+                        avatarUrl = it["photoUrl"].toString()
+                    }
+                }
+            },
+            onError = { /* Mantener datos por defecto */ }
+        )
+    }
+
+    // Launcher para abrir la galería del dispositivo
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { selectedUri ->
+            isUploading = true
+            Toast.makeText(context, "Subiendo imagen a Cloudinary...", Toast.LENGTH_SHORT).show()
+
+            // Subir a Cloudinary
+            CloudinaryManager.subirFoto(
+                uri = selectedUri,
+                onSuccess = { url ->
+                    avatarUrl = url
+                    isUploading = false
+                    // Guardar nueva URL en Firestore
+                    authService.guardarPerfil(
+                        nombre = name,
+                        email = currentUser?.email ?: "",
+                        photoUrl = url,
+                        onSuccess = {
+                            Toast.makeText(context, "¡Foto actualizada y guardada!", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                },
+                onError = { error ->
+                    isUploading = false
+                    Toast.makeText(context, "Error al subir: $error", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
+
     Scaffold(
         containerColor = BackgroundDark,
         bottomBar = { BottomNavBar(activeTab = NavTab.PROFILE, onTabSelected = onTabSelected) }
     ) { padding ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-            item { ProfileHeaderBar() }
-            item { ProfileBlock(name, bio, avatarUrl) }
+            item { ProfileHeaderBar(onLogout = onLogout) }
+            item {
+                ProfileBlock(
+                    name = name,
+                    bio = bio,
+                    avatarUrl = avatarUrl,
+                    isUploading = isUploading,
+                    onAvatarClick = { galleryLauncher.launch("image/*") }
+                )
+            }
             item { StatsRow() }
             item {
                 Text(
@@ -77,24 +148,30 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeaderBar() {
+private fun ProfileHeaderBar(onLogout: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("My Profile", style = RickMortyTextStyles.ProfileHeaderTitle, color = TextPrimary)
-        Box(
-            modifier = Modifier.size(36.dp).clip(CircleShape).background(SearchInputBg).border(1.dp, NeonGreen, CircleShape),
-            contentAlignment = Alignment.Center
+        IconButton(
+            onClick = onLogout,
+            modifier = Modifier.size(36.dp).clip(CircleShape).background(SearchInputBg).border(1.dp, NeonGreen, CircleShape)
         ) {
-            Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = NeonGreen, modifier = Modifier.size(16.dp))
+            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar Sesión", tint = NeonGreen, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 @Composable
-private fun ProfileBlock(name: String, bio: String, avatarUrl: String) {
+private fun ProfileBlock(
+    name: String,
+    bio: String,
+    avatarUrl: String,
+    isUploading: Boolean,
+    onAvatarClick: () -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -106,6 +183,8 @@ private fun ProfileBlock(name: String, bio: String, avatarUrl: String) {
                 .shadow(elevation = 12.dp, shape = CircleShape, ambientColor = NeonGreen, spotColor = NeonGreen)
                 .clip(CircleShape)
                 .border(3.dp, NeonGreen, CircleShape)
+                .clickable { onAvatarClick() },
+            contentAlignment = Alignment.Center
         ) {
             AsyncImage(
                 model = avatarUrl,
@@ -113,6 +192,15 @@ private fun ProfileBlock(name: String, bio: String, avatarUrl: String) {
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
+
+            if (isUploading) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = NeonGreen, modifier = Modifier.size(32.dp))
+                }
+            }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(name, style = RickMortyTextStyles.ProfileName, color = TextPrimary, textAlign = TextAlign.Center)

@@ -33,9 +33,11 @@ private val filterChips = listOf("All", "Alive", "Dead", "Unknown")
 fun HomeScreen(
     userName: String = "Rick",
     onTabSelected: (NavTab) -> Unit = {},
+    onCharacterClick: (Int) -> Unit = {}, // callback para abrir el detalle
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val userPhotoUrl by viewModel.userPhotoUrl.collectAsState() // Observa la foto real desde Firestore
     var activeFilter by remember { mutableStateOf("All") }
 
     Scaffold(
@@ -43,8 +45,13 @@ fun HomeScreen(
         bottomBar = { BottomNavBar(activeTab = NavTab.HOME, onTabSelected = onTabSelected) }
     ) { padding ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-            item { HomeHeader(userName) }
-            item { SearchSection(onSearch = { query -> viewModel.loadCharacters(query.ifBlank { null }) }) }
+            item { HomeHeader(userName = userName, photoUrl = userPhotoUrl) }
+            item {
+                SearchSection(onSearch = { query ->
+                    val cleanQuery = query.trim()
+                    viewModel.loadCharacters(if (cleanQuery.isEmpty()) null else cleanQuery)
+                })
+            }
             item { ChipsRow(active = activeFilter, onSelect = { activeFilter = it }) }
             item { SectionTitleRow() }
 
@@ -64,7 +71,11 @@ fun HomeScreen(
                         activeFilter == "All" || it.status.equals(activeFilter, ignoreCase = true)
                     }
                     items(filtered) { character ->
-                        CharacterTrendingCard(character, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+                        CharacterTrendingCard(
+                            character = character,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            onClick = { onCharacterClick(character.id) } // Evento de navegación
+                        )
                     }
                 }
             }
@@ -74,7 +85,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(userName: String) {
+private fun HomeHeader(userName: String, photoUrl: String?) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -86,7 +97,8 @@ private fun HomeHeader(userName: String) {
         }
         Box(modifier = Modifier.size(48.dp).clip(CircleShape).border(2.dp, NeonGreen, CircleShape)) {
             AsyncImage(
-                model = "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
+                // Si photoUrl es nulo o vacío, muestra la foto por defecto
+                model = if (!photoUrl.isNullOrEmpty()) photoUrl else "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
                 contentDescription = "Avatar de perfil",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -116,7 +128,10 @@ private fun SearchSection(onSearch: (String) -> Unit) {
             Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp))
             androidx.compose.foundation.text.BasicTextField(
                 value = query,
-                onValueChange = { query = it; onSearch(it) },
+                onValueChange = {
+                    query = it
+                    onSearch(it)
+                },
                 textStyle = RickMortyTextStyles.SearchPlaceholder.copy(color = TextPrimary),
                 singleLine = true,
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(NeonGreen),
@@ -171,8 +186,18 @@ private fun SectionTitleRow() {
 }
 
 @Composable
-private fun CharacterTrendingCard(character: RickCharacter, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxWidth().height(170.dp).clip(ShapeCard)) {
+private fun CharacterTrendingCard(
+    character: RickCharacter,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(170.dp)
+            .clip(ShapeCard)
+            .clickable { onClick() } // Hace la tarjeta clickeable
+    ) {
         AsyncImage(
             model = character.image,
             contentDescription = character.name,

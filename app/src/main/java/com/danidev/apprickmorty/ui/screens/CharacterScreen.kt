@@ -1,19 +1,7 @@
 package com.danidev.apprickmorty.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -22,15 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,7 +27,7 @@ import coil.compose.AsyncImage
 import com.danidev.apprickmorty.data.model.RickCharacter
 import com.danidev.apprickmorty.ui.components.BottomNavBar
 import com.danidev.apprickmorty.ui.components.NavTab
-import com.danidev.apprickmorty.ui.theme.BackgroundDark
+import com.danidev.apprickmorty.ui.theme.*
 import com.danidev.apprickmorty.ui.viewModel.CharacterUiState
 import com.danidev.apprickmorty.ui.viewModel.CharacterViewModel
 
@@ -64,65 +44,77 @@ fun ComposableCharacterScreen(
         containerColor = BackgroundDark,
         bottomBar = { BottomNavBar(activeTab = NavTab.EXPLORE, onTabSelected = onTabSelected) }
     ) { padding ->
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .statusBarsPadding()
-    ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.onSearchQueryChanged(it) },
-            placeholder = { Text("Buscar un personaje") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Limpiar")
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(size = 24.dp),
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+                .fillMaxSize()
+                .padding(padding)
+                .statusBarsPadding()
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.onSearchQueryChanged(it) },
+                placeholder = { Text("Buscar un personaje", color = TextSecondary) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar", tint = TextSecondary) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = "Limpiar", tint = TextSecondary)
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(size = 24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonGreen,
+                    unfocusedBorderColor = BorderMuted,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedContainerColor = SearchInputBg,
+                    unfocusedContainerColor = SearchInputBg
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            when (val state = uiState) {
-                is CharacterUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is CharacterUiState.Error -> {
-                    Text(
-                        text = "Error: ${state.message}",
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp)
-                    )
-                }
-                is CharacterUiState.Success -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(
-                            items = state.characters,
-                            key = { item: RickCharacter -> item.id }
-                        ) { characterItem: RickCharacter ->
-                            CharacterCard(
-                                character = characterItem,
-                                onClick = { onCharacterClick(characterItem.id) }
-                            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (val state = uiState) {
+                    is CharacterUiState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = NeonGreen
+                        )
+                    }
+                    is CharacterUiState.Error -> {
+                        Text(
+                            text = "Error: ${state.message}",
+                            color = TextSecondary,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp)
+                        )
+                    }
+                    is CharacterUiState.Success -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(
+                                items = state.characters,
+                                key = { item: RickCharacter -> item.id }
+                            ) { characterItem: RickCharacter ->
+                                CharacterCard(
+                                    character = characterItem,
+                                    onClick = { onCharacterClick(characterItem.id) }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
     }
 }
 
@@ -135,7 +127,8 @@ fun CharacterCard(
         onClick = onClick,
         shape = RoundedCornerShape(size = 15.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = SettingsRowBg),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column {
             AsyncImage(
@@ -150,6 +143,7 @@ fun CharacterCard(
                 Text(
                     text = character.name,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -167,7 +161,11 @@ fun CharacterCard(
                             .background(statusColor)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = character.status, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = character.status,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
                 }
             }
         }
